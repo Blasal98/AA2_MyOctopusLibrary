@@ -36,7 +36,7 @@ namespace OctopusController
         {
 
            
-            Debug.Log("hello, I am initializing my Octopus Controller in object "+objectName);
+            Debug.Log("hello, I am initializing my Octopus Controller in object / Aguilo"+objectName);
 
             
         }
@@ -51,7 +51,6 @@ namespace OctopusController
 
                 _tentacles[i] = new MyTentacleController();
                 _tentacles[i].LoadTentacleJoints(tentacleRoots[i],TentacleMode.TENTACLE);
-                i++;
                 //TODO: initialize any variables needed in ccd
             }
 
@@ -77,6 +76,7 @@ namespace OctopusController
         {
             //TODO: implement logic for the correct tentacle arm to stop the ball and implement CCD method
             update_ccd();
+            
         }
 
 
@@ -88,11 +88,14 @@ namespace OctopusController
         #region private and internal methods
         //todo: add here anything that you need
 
-        void update_ccd() {
-           
+        void update_ccd()
+        {
 
+            for (int i = 0; i < _tentacles.Length; i++)
+            {
+                _tentacles[i].Bones[49].transform.position = _randomTargets[i].position;
+            }
         }
-
 
         
 
