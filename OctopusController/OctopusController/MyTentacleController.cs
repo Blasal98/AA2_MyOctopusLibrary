@@ -31,13 +31,31 @@ namespace OctopusController
             tentacleMode = mode;
 
             switch (tentacleMode){
-                case TentacleMode.LEG:
-                    //TODO: in _endEffectorsphere you keep a reference to the base of the leg
+                case TentacleMode.LEG://TODO: in _endEffectorsphere you keep a reference to the base of the leg
+                    _bones = new Transform[3];
+                    root = root.GetChild(0);
+                    //root es joint0
+                    for (int i = 0; i < _bones.Length; i++)
+                    {
+                        _bones[i] = root;
+                        root = root.GetChild(1);
+                    }
+                    _endEffectorSphere = new Transform[1];
+                    _endEffectorSphere[0] = root;
                     break;
-                case TentacleMode.TAIL:
-                    //TODO: in _endEffectorsphere you keep a reference to the red sphere 
+                case TentacleMode.TAIL://TODO: in _endEffectorsphere you keep a reference to the red sphere 
+                    _bones = new Transform[5];
+                    //root es joint0
+                    for (int i = 0; i < _bones.Length; i++)
+                    {
+                        _bones[i] = root;
+                        root = root.GetChild(1);
+                    }
+                    _endEffectorSphere = new Transform[1];
+                    _endEffectorSphere[0] = root;
+
                     break;
-                case TentacleMode.TENTACLE:
+                case TentacleMode.TENTACLE://TODO: in _endEffectorphere you  keep a reference to the sphere with a collider attached to the endEffector
                     _bones = new Transform[50];
                     //avançem fins a bone_50
                     root = root.GetChild(0);
@@ -50,7 +68,7 @@ namespace OctopusController
                     }
                     _endEffectorSphere = new Transform[1];
                     _endEffectorSphere[0] = root;
-                    //TODO: in _endEffectorphere you  keep a reference to the sphere with a collider attached to the endEffector
+                    
                     break;
             }
             return Bones;
