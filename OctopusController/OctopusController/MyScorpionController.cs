@@ -19,6 +19,7 @@ namespace OctopusController
         float[] _solutionsTail;
         Vector3[] _axisTail;
         Vector3[] _offsetTail;
+        float[] _gradientTail;
 
 
         //LEGS
@@ -49,6 +50,7 @@ namespace OctopusController
             _solutionsTail = new float[_tail.Bones.Length];
             _axisTail = new Vector3[_tail.Bones.Length];
             _offsetTail = new Vector3[_tail.Bones.Length];
+            _gradientTail = new float[_tail.Bones.Length];
 
             for (int i = 0; i < _tail.Bones.Length; i++)
             {
@@ -57,7 +59,8 @@ namespace OctopusController
             for (int i = 0; i < _tail.Bones.Length; i++)
             {
                 _solutionsTail[i] = 0;
-                _axisTail[i] = new Vector3(1,0,0);
+                if(i%2 == 0)_axisTail[i] = new Vector3(1,0,0);
+                else _axisTail[i] = new Vector3(0,0,1);
                 if (i < _tail.Bones.Length - 1) _offsetTail[i] = _tail.Bones[i + 1].position - _tail.Bones[i].position;
                 else _offsetTail[i] = _tail.EndEffector[0].position - _tail.Bones[i].position;
             }
@@ -95,25 +98,55 @@ namespace OctopusController
         //TODO: implement Gradient Descent method to move tail if necessary
         private void updateTail()
         {
-            FKTail(_solutionsTail,_axisTail);
-            if ((_tail.EndEffector[0].position - tailTarget.position).magnitude < 1f)
+            if ((_tail.EndEffector[0].position - tailTarget.position).magnitude < 5f)
             {
-               //TODO
+                //TODO
 
-
+                if (ErrorFunction(_solutionsTail, _axisTail, _offsetTail, tailTarget.position) > 0.1f)
+                {
+                    for (int i = 0; i < _tail.Bones.Length; i++)
+                    {
+                        _gradientTail[i] = gradientFunction(tailTarget.position, _solutionsTail, _axisTail, _offsetTail, i, 0.1f);
+                    }
+                    for (int i = 0; i < _tail.Bones.Length; i++)
+                    {
+                        _solutionsTail[i] = _solutionsTail[i] - 1 * _gradientTail[i];
+                    }
+                    FW_Tail();
+                }
             }
+            Debug.Log(ErrorFunction(_solutionsTail, _axisTail, _offsetTail, tailTarget.position));
+            Debug.Log((_tail.EndEffector[0].position - tailTarget.position).magnitude);
+            Debug.Log(" ");
         }
         //TODO: implement fabrik method to move legs 
         private void updateLegs()
         {
 
         }
-        private void gradientFunction(Vector3 target, float[] solutions, int i, float delta)
+        private float gradientFunction(Vector3 target, float[] solutions, Vector3[] axis, Vector3[] offsets, int i, float delta)
         {
             float gradient = 0;
+            float auxAngle = solutions[i];
+            float f_x = ErrorFunction(solutions, axis, offsets, target);
+            solutions[i] += delta;
+            float f_x_plus = ErrorFunction(solutions, axis, offsets, target);
+            gradient = (f_x_plus - f_x) / delta;
+            solutions[i] = auxAngle;
+
+            return gradient;
         }
-        //aixo es basicament forward kinematics, pero podriem fer punter de funcio
-        private void ErrorFunction(float[] solutions, Vector3[] axis, Vector3[] offsets) 
+        private void FW_Tail()
+        {
+            Quaternion rotation = _tail.Bones[0].transform.rotation;
+
+            for (int i = 0; i < _tail.Bones.Length; i++)
+            {
+                 rotation *= Quaternion.AngleAxis(_solutionsTail[i], _axisTail[i]);
+                _tail.Bones[i].rotation = rotation;
+            }
+        }
+        private Vector3 ForwardKinematics(float[] solutions, Vector3[] axis, Vector3[] offsets) 
         {
             Vector3 prevPoint = _tail.Bones[0].transform.position;
             Quaternion rotation = _tail.Bones[0].transform.rotation;
@@ -124,11 +157,11 @@ namespace OctopusController
                 Vector3 nextPoint = prevPoint + rotation * offsets[i];
                 prevPoint = nextPoint;
             }
-            
+            return prevPoint;
         }
-        private void FKTail(float[] solutions, Vector3[] axis)
+        private float ErrorFunction(float[] solutions, Vector3[] axis, Vector3[] offsets, Vector3 target)
         {
-            
+            return (ForwardKinematics(solutions,axis,offsets) - target).magnitude;
         }
         #endregion
     }
