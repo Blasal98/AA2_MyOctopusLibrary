@@ -20,6 +20,7 @@ namespace OctopusController
         Vector3[] _axisTail;
         Vector3[] _offsetTail;
         float[] _gradientTail;
+        float _sizeTail;
 
 
         //LEGS
@@ -51,6 +52,7 @@ namespace OctopusController
             _axisTail = new Vector3[_tail.Bones.Length];
             _offsetTail = new Vector3[_tail.Bones.Length];
             _gradientTail = new float[_tail.Bones.Length];
+            _sizeTail = 0;
 
             for (int i = 0; i < _tail.Bones.Length; i++)
             {
@@ -59,16 +61,18 @@ namespace OctopusController
             for (int i = 0; i < _tail.Bones.Length; i++)
             {
                 _solutionsTail[i] = 0;
-                if(i%2 == 0)_axisTail[i] = new Vector3(1,0,0);
-                else _axisTail[i] = new Vector3(0,0,1);
+                if (i % 2 == 0) _axisTail[i] = new Vector3(1, 0, 0);
+                else _axisTail[i] = new Vector3(0, 0, 1);
                 if (i != _tail.Bones.Length - 1) _offsetTail[i] = _tail.Bones[i + 1].position - _tail.Bones[i].position;
                 else _offsetTail[i] = _tail.EndEffector[0].position - _tail.Bones[i].position;
 
                 //Debug.Log(_solutionsTail[i] + " " + _axisTail[i] + " " + _offsetTail[i] + " " + _offsetTail[i].magnitude);
             }
-
+            for (int i = 0; i < _tail.Bones.Length; i++)
+            {
+                _sizeTail += _offsetTail[i].magnitude;
+            }
         }
-
         //TODO: Check when to start the animation towards target and implement Gradient Descent method to move the joints.
         public void NotifyTailTarget(Transform target)
         {
@@ -100,7 +104,7 @@ namespace OctopusController
         //TODO: implement Gradient Descent method to move tail if necessary
         private void updateTail()
         {
-            if ((_tail.EndEffector[0].position - tailTarget.position).magnitude < 5f)
+            if ((_tail.Bones[0].position - tailTarget.position).magnitude <= _sizeTail) //si la bola i bone[0] estan a una distancia inferior a la mida de la cua
             {
                 //TODO
 
@@ -117,10 +121,10 @@ namespace OctopusController
                     FW_Tail();
                 }
             }
-            Debug.Log(ErrorFunction(_solutionsTail, _axisTail, _offsetTail, tailTarget.position));
-            Debug.Log((_tail.EndEffector[0].position - tailTarget.position).magnitude);
-            Debug.Log((_tail.EndEffector[0].position - tailTarget.position).magnitude- ErrorFunction(_solutionsTail, _axisTail, _offsetTail, tailTarget.position));
-            Debug.Log(" ");
+            //Debug.Log(ErrorFunction(_solutionsTail, _axisTail, _offsetTail, tailTarget.position));
+            //Debug.Log((_tail.EndEffector[0].position - tailTarget.position).magnitude);
+            //Debug.Log((_tail.EndEffector[0].position - tailTarget.position).magnitude- ErrorFunction(_solutionsTail, _axisTail, _offsetTail, tailTarget.position));
+            //Debug.Log(" ");
         }
         //TODO: implement fabrik method to move legs 
         private void updateLegs()
