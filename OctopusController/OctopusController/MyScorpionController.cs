@@ -54,15 +54,17 @@ namespace OctopusController
 
             for (int i = 0; i < _tail.Bones.Length; i++)
             {
-                _tail.Bones[0].rotation = Quaternion.identity;
+                _tail.Bones[i].rotation = Quaternion.identity;
             }
             for (int i = 0; i < _tail.Bones.Length; i++)
             {
                 _solutionsTail[i] = 0;
                 if(i%2 == 0)_axisTail[i] = new Vector3(1,0,0);
                 else _axisTail[i] = new Vector3(0,0,1);
-                if (i < _tail.Bones.Length - 1) _offsetTail[i] = _tail.Bones[i + 1].position - _tail.Bones[i].position;
+                if (i != _tail.Bones.Length - 1) _offsetTail[i] = _tail.Bones[i + 1].position - _tail.Bones[i].position;
                 else _offsetTail[i] = _tail.EndEffector[0].position - _tail.Bones[i].position;
+
+                //Debug.Log(_solutionsTail[i] + " " + _axisTail[i] + " " + _offsetTail[i] + " " + _offsetTail[i].magnitude);
             }
 
         }
@@ -117,6 +119,7 @@ namespace OctopusController
             }
             Debug.Log(ErrorFunction(_solutionsTail, _axisTail, _offsetTail, tailTarget.position));
             Debug.Log((_tail.EndEffector[0].position - tailTarget.position).magnitude);
+            Debug.Log((_tail.EndEffector[0].position - tailTarget.position).magnitude- ErrorFunction(_solutionsTail, _axisTail, _offsetTail, tailTarget.position));
             Debug.Log(" ");
         }
         //TODO: implement fabrik method to move legs 
@@ -149,7 +152,7 @@ namespace OctopusController
         private Vector3 ForwardKinematics(float[] solutions, Vector3[] axis, Vector3[] offsets) 
         {
             Vector3 prevPoint = _tail.Bones[0].transform.position;
-            Quaternion rotation = _tail.Bones[0].transform.rotation;
+            Quaternion rotation = _tail.Bones[0].GetComponentInParent<Transform>().rotation; 
 
             for(int i = 1; i < _tail.Bones.Length; i++)
             {
