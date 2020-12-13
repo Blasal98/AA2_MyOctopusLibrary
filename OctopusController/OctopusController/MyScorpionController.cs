@@ -74,19 +74,12 @@ namespace OctopusController
             updateLegPos();
             if (isMoving)
             {
-
-
                 timeToMove += Time.deltaTime;
-
                 if (timeToMove < animationRange)
                     updateLegPos();
-
                 else
                     isMoving = false;
-
-
             }
-
         }
         #endregion
 
@@ -97,8 +90,6 @@ namespace OctopusController
         {
             for (int i = 0; i < maxLegs; i++)
             {
-
-
                 if ((Vector3.Distance(_legs[i].Bones[0].position, legFutureBases[i].position)) > 1)
                 {
                     _legs[i].Bones[0].position = Vector3.Lerp(_legs[i].Bones[0].position, legFutureBases[i].position, 1.4f);
@@ -106,7 +97,6 @@ namespace OctopusController
                 //update la pierna que necesitamos y no todas como antes
                 updateLegs(i);
             }
-
         }
         //TODO: implement Gradient Descent method to move tail if necessary
         private void updateTail()
@@ -130,7 +120,7 @@ namespace OctopusController
             float targetRootDist = Vector3.Distance(copy[0], legTargets[leg].position);
             if (targetRootDist < jointsLength.Sum())
             {
-
+                #region DAVID_METODE
                 while (Vector3.Distance(copy[copy.Length - 1], legTargets[leg].position) != 0 || Vector3.Distance(copy[0], _legs[leg].Bones[0].position) != 0)
                 {
                     copy[copy.Length - 1] = legTargets[leg].position;
@@ -160,8 +150,9 @@ namespace OctopusController
                     Quaternion rot = Quaternion.FromToRotation(antDir, direction);
                     _legs[leg].Bones[i].rotation = rot * _legs[leg].Bones[i].rotation;
                 }
+                #endregion
 
-
+                #region NOSTRE_METODE
 
                 /*
                 for(int i = 0; i < _legs.Length; i++)
@@ -230,8 +221,10 @@ namespace OctopusController
                 }
                 //TODO: hacer for y asignar noewJointPoints a lo que sea que actualiza la pos
                 */
+                #endregion
             }
-            #endregion
+
         }
+        #endregion
     }
 }
