@@ -12,10 +12,12 @@ namespace OctopusController
     {
         //TAIL
         Transform tailTarget;
+        Vector3 lastTailTarget;
         Transform tailEndEffector;
         MyTentacleController _tail;
         float animationRange;
 
+        float[] _finalSolutionsTail;
         float[] _solutionsTail;
         Vector3[] _axisTail;
         Vector3[] _offsetTail;
@@ -23,6 +25,8 @@ namespace OctopusController
         float _sizeTail;
         float _learningStep;
         float _deltaGradient;
+        bool ballMoved;
+        float acumulator;
 
 
         //LEGS
@@ -50,6 +54,7 @@ namespace OctopusController
             _tail = new MyTentacleController();
             _tail.LoadTentacleJoints(TailBase, TentacleMode.TAIL);
             //TODO: Initialize anything needed for the Gradient Descent implementation
+            _finalSolutionsTail = new float[_tail.Bones.Length];
             _solutionsTail = new float[_tail.Bones.Length];
             _axisTail = new Vector3[_tail.Bones.Length];
             _offsetTail = new Vector3[_tail.Bones.Length];
@@ -57,6 +62,9 @@ namespace OctopusController
             _sizeTail = 0;
             _learningStep = 10;
             _deltaGradient = 0.05f;
+            lastTailTarget = new Vector3(0, 0, 0);
+            ballMoved = false;
+            acumulator = 0;
 
             Quaternion[] auxRotations = new Quaternion[_tail.Bones.Length];
             for (int i = 0; i < _tail.Bones.Length; i++) //Guardem Rotations i Posem els bones amb rotation 0
@@ -84,6 +92,13 @@ namespace OctopusController
         public void NotifyTailTarget(Transform target)
         {
             tailTarget = target;
+            if(lastTailTarget != tailTarget.position)
+            {
+                lastTailTarget = tailTarget.position;
+                ballMoved = true;
+                acumulator = 0;
+            }
+
         }
 
         //TODO: Notifies the start of the walking animation
@@ -114,8 +129,12 @@ namespace OctopusController
             if ((_tail.Bones[0].position - tailTarget.position).magnitude <= _sizeTail) //si la bola i bone[0] estan a una distancia inferior a la mida de la cua
             {
                 //TODO
-                for(int j=0; j < 3; j++) {
-                    if ((_tail.EndEffector[0].position - tailTarget.position).magnitude > 0.05f) //si el endeffector esta a mes de 0.1 unitatas de unity de la bola
+                if (ballMoved) {
+                    for (int i = 0; i < _tail.Bones.Length; i++)
+                    {
+                        _finalSolutionsTail[i] = _solutionsTail[i];
+                    }
+                    while ((_tail.EndEffector[0].position - tailTarget.position).magnitude > 1f) //si el endeffector esta a mes de 0.25 unitatas de unity de la bola
                     {
                         for (int i = 0; i < _tail.Bones.Length; i++)
                         {
@@ -127,9 +146,18 @@ namespace OctopusController
                         }
                         
                     }
-                    //else Debug.Log("GOOOL");
+                    ballMoved = false;
                 }
-                FW_Tail(); //actualitzem la cua visualment
+                if(acumulator <= 1)
+                {
+                    float[] auxAngles = new float[_tail.Bones.Length];
+                    for (int i = 0; i < _tail.Bones.Length; i++)
+                    {
+                        auxAngles[i] = lerp(_solutionsTail[i], _finalSolutionsTail[i], acumulator);
+                    }
+                    acumulator += 0.0025f;
+                }
+                //FW_Tail(); //actualitzem la cua visualment
             }
         }
         //TODO: implement fabrik method to move legs 
@@ -149,13 +177,13 @@ namespace OctopusController
 
             return gradient;
         }
-        private void FW_Tail() //ForwardKinematics -> Mou la cua
+        private void FW_Tail(float[] solutions) //ForwardKinematics -> Mou la cua
         {
-            Quaternion rotation = _tail.Bones[0].transform.rotation;
+            Quaternion rotation = _tail.Bones[0].GetComponentInParent<Transform>().rotation;
 
             for (int i = 0; i < _tail.Bones.Length; i++)
             {
-                 rotation *= Quaternion.AngleAxis(_solutionsTail[i], _axisTail[i]);
+                 rotation *= Quaternion.AngleAxis(solutions[i], _axisTail[i]);
                 _tail.Bones[i].rotation = rotation;
             }
         }
@@ -175,6 +203,11 @@ namespace OctopusController
         private float ErrorFunction(float[] solutions, Vector3[] axis, Vector3[] offsets, Vector3 target) //La nostra errorFunction calcula la distancia entre endeffector i target
         {
             return (ForwardKinematics(solutions,axis,offsets) - target).magnitude;
+        }
+
+        float lerp(float a, float b, float f)
+        {
+            return a + f * (b - a);
         }
         #endregion
     }
