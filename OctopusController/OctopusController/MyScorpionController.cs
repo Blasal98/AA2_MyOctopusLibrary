@@ -140,7 +140,7 @@ namespace OctopusController
             if ((_tail.Bones[0].position - tailTarget.position).magnitude <= _sizeTail) //si la bola i bone[0] estan a una distancia inferior a la mida de la cua
             {
                 //TODO
-                for(int j=0; j < 3; j++) {
+                for(int j=0; j < 5; j++) { //iteraciones por iteracion de update
                     if ((_tail.EndEffector[0].position - tailTarget.position).magnitude > 0.05f) //si el endeffector esta a mes de 0.1 unitatas de unity de la bola
                     {
                         for (int i = 0; i < _tail.Bones.Length; i++)
