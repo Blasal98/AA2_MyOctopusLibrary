@@ -21,6 +21,8 @@ namespace OctopusController
         Vector3[] _offsetTail;
         float[] _gradientTail;
         float _sizeTail;
+        float _learningStep;
+        float _deltaGradient;
 
 
         //LEGS
@@ -53,24 +55,29 @@ namespace OctopusController
             _offsetTail = new Vector3[_tail.Bones.Length];
             _gradientTail = new float[_tail.Bones.Length];
             _sizeTail = 0;
+            _learningStep = 10;
+            _deltaGradient = 0.05f;
 
-            for (int i = 0; i < _tail.Bones.Length; i++)
+            Quaternion[] auxRotations = new Quaternion[_tail.Bones.Length];
+            for (int i = 0; i < _tail.Bones.Length; i++) //Guardem Rotations i Posem els bones amb rotation 0
             {
+                //auxRotations[i] = _tail.Bones[i].localRotation;
                 _tail.Bones[i].rotation = Quaternion.identity;
             }
             for (int i = 0; i < _tail.Bones.Length; i++)
             {
                 _solutionsTail[i] = 0;
-                if (i % 2 == 0) _axisTail[i] = new Vector3(1, 0, 0);
-                else _axisTail[i] = new Vector3(0, 0, 1);
+                if (i == 1) _axisTail[i] = new Vector3(0, 0, 1); //que un pugui girar en x
+                else _axisTail[i] = new Vector3(1, 0, 0);
                 if (i != _tail.Bones.Length - 1) _offsetTail[i] = _tail.Bones[i + 1].position - _tail.Bones[i].position;
                 else _offsetTail[i] = _tail.EndEffector[0].position - _tail.Bones[i].position;
 
                 //Debug.Log(_solutionsTail[i] + " " + _axisTail[i] + " " + _offsetTail[i] + " " + _offsetTail[i].magnitude);
             }
-            for (int i = 0; i < _tail.Bones.Length; i++)
+            for (int i = 0; i < _tail.Bones.Length; i++) //Medim la cua i restaurem la posicio de la cua
             {
                 _sizeTail += _offsetTail[i].magnitude;
+                //_tail.Bones[i].localRotation = auxRotations[i];
             }
         }
         //TODO: Check when to start the animation towards target and implement Gradient Descent method to move the joints.
@@ -107,31 +114,30 @@ namespace OctopusController
             if ((_tail.Bones[0].position - tailTarget.position).magnitude <= _sizeTail) //si la bola i bone[0] estan a una distancia inferior a la mida de la cua
             {
                 //TODO
-
-                if (ErrorFunction(_solutionsTail, _axisTail, _offsetTail, tailTarget.position) > 0.1f)
-                {
-                    for (int i = 0; i < _tail.Bones.Length; i++)
+                for(int j=0; j < 3; j++) {
+                    if ((_tail.EndEffector[0].position - tailTarget.position).magnitude > 0.05f) //si el endeffector esta a mes de 0.1 unitatas de unity de la bola
                     {
-                        _gradientTail[i] = gradientFunction(tailTarget.position, _solutionsTail, _axisTail, _offsetTail, i, 0.1f);
+                        for (int i = 0; i < _tail.Bones.Length; i++)
+                        {
+                            _gradientTail[i] = gradientFunction(tailTarget.position, _solutionsTail, _axisTail, _offsetTail, i, _deltaGradient); //gradients parcials
+                        }
+                        for (int i = 0; i < _tail.Bones.Length; i++)
+                        {
+                            _solutionsTail[i] = _solutionsTail[i] - _learningStep * _gradientTail[i]; //aplicar gradients a la solució
+                        }
+                        
                     }
-                    for (int i = 0; i < _tail.Bones.Length; i++)
-                    {
-                        _solutionsTail[i] = _solutionsTail[i] - 1 * _gradientTail[i];
-                    }
-                    FW_Tail();
+                    //else Debug.Log("GOOOL");
                 }
+                FW_Tail(); //actualitzem la cua visualment
             }
-            //Debug.Log(ErrorFunction(_solutionsTail, _axisTail, _offsetTail, tailTarget.position));
-            //Debug.Log((_tail.EndEffector[0].position - tailTarget.position).magnitude);
-            //Debug.Log((_tail.EndEffector[0].position - tailTarget.position).magnitude- ErrorFunction(_solutionsTail, _axisTail, _offsetTail, tailTarget.position));
-            //Debug.Log(" ");
         }
         //TODO: implement fabrik method to move legs 
         private void updateLegs()
         {
 
         }
-        private float gradientFunction(Vector3 target, float[] solutions, Vector3[] axis, Vector3[] offsets, int i, float delta)
+        private float gradientFunction(Vector3 target, float[] solutions, Vector3[] axis, Vector3[] offsets, int i, float delta) //gradients parcials
         {
             float gradient = 0;
             float auxAngle = solutions[i];
@@ -143,7 +149,7 @@ namespace OctopusController
 
             return gradient;
         }
-        private void FW_Tail()
+        private void FW_Tail() //ForwardKinematics -> Mou la cua
         {
             Quaternion rotation = _tail.Bones[0].transform.rotation;
 
@@ -153,7 +159,7 @@ namespace OctopusController
                 _tail.Bones[i].rotation = rotation;
             }
         }
-        private Vector3 ForwardKinematics(float[] solutions, Vector3[] axis, Vector3[] offsets) 
+        private Vector3 ForwardKinematics(float[] solutions, Vector3[] axis, Vector3[] offsets) //ForwardKinematics -> Calcula la posició del endeffector
         {
             Vector3 prevPoint = _tail.Bones[0].transform.position;
             Quaternion rotation = _tail.Bones[0].GetComponentInParent<Transform>().rotation; 
@@ -166,7 +172,7 @@ namespace OctopusController
             }
             return prevPoint;
         }
-        private float ErrorFunction(float[] solutions, Vector3[] axis, Vector3[] offsets, Vector3 target)
+        private float ErrorFunction(float[] solutions, Vector3[] axis, Vector3[] offsets, Vector3 target) //La nostra errorFunction calcula la distancia entre endeffector i target
         {
             return (ForwardKinematics(solutions,axis,offsets) - target).magnitude;
         }
